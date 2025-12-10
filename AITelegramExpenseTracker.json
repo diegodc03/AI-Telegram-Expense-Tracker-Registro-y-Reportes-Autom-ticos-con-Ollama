@@ -1,0 +1,1255 @@
+{
+  "name": "GastosWorkflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        0
+      ],
+      "id": "3e77f15b-65ab-4ce8-9f97-3ca15660a89b",
+      "name": "Telegram Trigger1",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "permissions",
+          "mode": "list",
+          "cachedResultName": "permissions"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "user_id",
+              "value": "={{ $json.message.from.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        352,
+        0
+      ],
+      "id": "fa67cc17-b42c-4780-b01b-15006efe95f2",
+      "name": "Select rows from a table",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "ud2UXNmjxhYN5Wfb",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cd1de177-6b85-4154-aec3-ddd212277bb0",
+              "leftValue": "={{ $json.user_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        0
+      ],
+      "id": "fa21f085-3e4c-4f6f-ab5b-20731e0dfaea",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.168.1.206:11434/api/generate",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={   \"model\": \"phi3\",   \"prompt\": \"Eres un sistema experto en clasificación de gastos. Tu única salida debe ser un objeto JSON válido con las claves: \\\"concepto\\\", \\\"cantidad\\\" y \\\"categoria\\\".\\n\\nREGLAS ESTRICTAS:\\n1. Devuelve SOLO el JSON. Sin texto antes ni después.\\n2. Si el mensaje NO describe un gasto, NO contiene un concepto reconocible o NO incluye información suficiente para clasificarlo, devuelve exactamente:\\n   {\\\"concepto\\\": null, \\\"cantidad\\\": null, \\\"categoria\\\": null}\\n\\n3. Si el mensaje es válido:\\n   - \\\"concepto\\\": descripción corta y clara del gasto.\\n   - \\\"cantidad\\\": número decimal sin símbolo de moneda. Si no hay cantidad en el texto, usa null.\\n   - \\\"categoria\\\": debe ser UNA y solo una de estas categorías:\\n       - alimentacion\\n       - transporte\\n       - compras\\n       - suscripciones\\n       - ocio\\n       - salud\\n       - tecnologia\\n       - hogar\\n       - viajes\\n       - otros\\n\\n4. Si el concepto es ambiguo o no encaja claramente en ninguna categoría, usa \\\"otros\\\".\\n\\n5. El JSON final debe tener esta estructura EXACTA:\\n   {\\\"concepto\\\": \\\"...\\\", \\\"cantidad\\\": 0.00, \\\"categoria\\\": \\\"...\\\"}\\n\\nAhora analiza este texto:\\n{{ $('Telegram Trigger1').item.json.message.text }}\",   \"stream\": false }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        880,
+        -176
+      ],
+      "id": "bedd94fe-8df9-41c6-9db2-3ee08e47718e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "No tienes permisos para poder enviar mensajes",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        192
+      ],
+      "id": "447b6e81-07b0-4ae5-a3a8-f7dced07f2d4",
+      "name": "No hay permisos",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "=Gasto registrado correctamente:\n\n🧾 Concepto: {{ $('Code in JavaScript1').item.json.concepto }}\n💰 Cantidad:  {{ $('Code in JavaScript1').item.json.cantidad }}€\n🏷️ Categoría: {{ $('Code in JavaScript1').item.json.categoria }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3456,
+        -208
+      ],
+      "id": "73c66df9-aa16-4406-ad64-cfcef468d09a",
+      "name": "Mensaje Final",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Tomamos el contenido del campo response\nconst raw = $input.first().json.response;\nlet parsed;\n\n// ----------------------------------------------------\n// PASO A: Intentar PARSEAR como JSON PURO (Validación)\n// ----------------------------------------------------\ntry {\n    // Intentamos parsear el 'raw' directamente\n    parsed = JSON.parse(raw);\n    \n    // Si tiene éxito, devolvemos el resultado inmediatamente\n    return [{ json: parsed }];\n\n} catch (e) {\n    // Si falla (porque tiene ```json...``` o es texto basura), \n    // pasamos al Paso B para intentar la extracción del bloque de código.\n    console.log(\"No es JSON puro. Intentando extraer el bloque de código...\");\n}\n\n\n// ----------------------------------------------------\n// PASO B: Lógica de Extracción de Bloque de Código (si A falla)\n// ----------------------------------------------------\n\nconst lines = raw.split('\\n');\nlet jsonStarted = false;\nlet jsonLines = [];\n\nfor (const line of lines) {\n    const trimmedLine = line.trim();\n\n    // Si encontramos el inicio del bloque de código ('```json' o '```')\n    if (trimmedLine.startsWith('```')) {\n        if (jsonStarted) {\n            // Fin del bloque. Dejamos de procesar.\n            break; \n        } else {\n            // Inicio del bloque. Activamos la bandera.\n            jsonStarted = true;\n            continue; // Saltar la línea '```json'\n        }\n    }\n\n    // Si ya estamos dentro del bloque, guardamos la línea\n    if (jsonStarted) {\n        jsonLines.push(line);\n    }\n}\n\n// 3. Unimos las líneas extraídas en una sola cadena JSON\nconst jsonString = jsonLines.join('\\n').trim();\n\nif (!jsonString) {\n    throw new Error(\"No se pudo extraer una cadena JSON válida del bloque de código.\");\n}\n\n// 4. Convertimos la cadena JSON completa en objeto\nparsed = JSON.parse(jsonString);\n\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -176
+      ],
+      "id": "6f997a91-1eda-43db-8ddc-ae88802f62cc",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "expenses",
+          "mode": "list",
+          "cachedResultName": "expenses"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $('Telegram Trigger1').item.json.message.from.id }}",
+            "concepto": "={{ $('Code in JavaScript1').item.json.concepto }}",
+            "cantidad": "={{ $('Code in JavaScript1').item.json.cantidad }}",
+            "raw_text": "={{ $('Telegram Trigger1').item.json.message.text }}",
+            "category_id": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "concepto",
+              "displayName": "concepto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cantidad",
+              "displayName": "cantidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category_id",
+              "displayName": "category_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_text",
+              "displayName": "raw_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3008,
+        -208
+      ],
+      "id": "2d4cad99-a4e6-40a0-982f-6e048f74ab1f",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "ud2UXNmjxhYN5Wfb",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "categories",
+          "mode": "list",
+          "cachedResultName": "categories"
+        },
+        "where": {
+          "values": [
+            {
+              "column": "name",
+              "value": "={{ $json.categoria }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2400,
+        -608
+      ],
+      "id": "e99c705f-acfa-4fa1-8f02-b1904c8d4581",
+      "name": "Select rows from a table1",
+      "credentials": {
+        "postgres": {
+          "id": "ud2UXNmjxhYN5Wfb",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 7,
+              "triggerAtMinute": 30
+            },
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        -624
+      ],
+      "id": "20d269c2-74df-424d-84c6-cba1594b2326",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        -912
+      ],
+      "id": "b877261d-0728-4a3d-b925-4928eb038cec",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  exp.id,\n  exp.user_id,\n  exp.concepto,\n  exp.cantidad,\n  exp.category_id,\n  categ.name\nFROM\n    expenses exp\n  LEFT JOIN categories categ ON categ.id = exp.category_id\nWHERE\n    created_at > NOW() - INTERVAL '7 days';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        560,
+        -624
+      ],
+      "id": "4cbfe49b-f302-4ef1-9eed-fc3356c98a58",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "ud2UXNmjxhYN5Wfb",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  exp.id,\n  exp.user_id,\n  exp.concepto,\n  exp.cantidad,\n  exp.category_id,\n  categ.name\nFROM\n    expenses exp\n  LEFT JOIN categories categ ON categ.id = exp.category_id\nWHERE\n    created_at > NOW() - INTERVAL '31 days';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        560,
+        -912
+      ],
+      "id": "4d94145a-c8b8-4d9c-809a-b94c80eeb5a3",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "postgres": {
+          "id": "ud2UXNmjxhYN5Wfb",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "02e0327d-4816-4af5-8a32-f24655d002ed",
+                    "leftValue": "={{ $json.cantidad }}",
+                    "rightValue": "[null]",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Concepto null array"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "46b5a63f-dad2-42bb-8fad-211b7cf6173d",
+                    "leftValue": "={{ $json.cantidad }}",
+                    "rightValue": "null",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cantidad null string"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.concepto }}",
+                    "rightValue": "[null]",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "400608fd-3684-4244-99f3-36cb5bae79fa"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "concepto null array"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c8216f5c-5cd0-4e03-9bba-89efd3c15e4b",
+                    "leftValue": "={{ $json.concepto }}",
+                    "rightValue": "null",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Concepto null string"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "25c4379e-20ea-4b57-9456-232daf81c35d",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "null",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "categoria null string"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "add6b66c-eccc-4455-9f36-844f3bc8ae37",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "[null]",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "categoria null array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        2480,
+        288
+      ],
+      "id": "204e5a10-04c8-4281-b3f1-8f4aef1447e0",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "message": "Vuelva a poner el valor",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3360,
+        480
+      ],
+      "id": "88024837-f290-4f8e-a7a4-a7cf182e2ffb",
+      "name": "Get Amount of money if is null",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $input.first().json.data.text\n\nconst numericValue = parseFloat(rawText.replace(',', '.').trim());\n\n// 3. Inicializar el mensaje de salida\nlet resultMessage;\nlet success = false;\n\n// 4. Validar si la conversión resultó en un número válido\nif (isNaN(numericValue)) {\n    // La conversión falló (ej: el texto era \"Hola\")\n    resultMessage = `⚠️ Error: No se pudo identificar un valor numérico válido en el texto \"${rawText}\". Por favor, introduce una cantidad (ej: 10.50).`;\n} else {\n    // La conversión fue exitosa\n    resultMessage = `✅ Cantidad registrada: ${numericValue}`;\n    success = true;\n}\n\n// Devolver el resultado en un nuevo ítem JSON\nreturn [{\n    json: {\n        // El valor numérico limpio o NaN si falló\n        cantidad_num: numericValue, \n        \n        // El mensaje a enviar a Telegram (éxito o error)\n        mensaje_salida: resultMessage,\n        \n        // Bandera para usar en un nodo IF posterior\n        es_valido: success\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        576
+      ],
+      "id": "31ef44fa-1e25-4baf-ab8f-f19230726f4a",
+      "name": "pasar a numerico"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger1').item.json.message.chat.id }}",
+        "text": "No se ha podido crear correctamente el registro",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2480,
+        -112
+      ],
+      "id": "5a539e48-ab1f-4eae-b174-d6b71a102808",
+      "name": "Send a text message",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "529b3593-9aba-4634-a0a1-474e2b70db04",
+              "leftValue": "={{ $json.concepto }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "46ade128-16a6-429e-ab2f-61c42a70435d",
+              "leftValue": "={{ $json.concepto }}",
+              "rightValue": "[null]",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "acd79ac8-e1a0-4c3a-b250-4a048b59476b",
+              "leftValue": "={{ $json.categoria }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "98cc8da3-4e4b-4d95-acf7-74c5446723d7",
+              "leftValue": "={{ $json.categoria }}",
+              "rightValue": "[null]",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        -176
+      ],
+      "id": "491305c6-1550-44a3-b103-86f400b3fcb8",
+      "name": "Comprobacion correcto funcionamiento"
+    },
+    {
+      "parameters": {
+        "jsCode": "$('Code in JavaScript1').first().json.categoria = \"otros\";"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        1120
+      ],
+      "id": "7c3a4f7d-aad6-4226-a45f-08aae1e3ab8c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "$('Code in JavaScript1').first().json.concepto = $('Telegram Trigger1').first().json.message.text"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        848
+      ],
+      "id": "e9abde03-707e-4b47-ba16-04063e311f3c",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "529b3593-9aba-4634-a0a1-474e2b70db04",
+              "leftValue": "={{ $json.concepto }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "acd79ac8-e1a0-4c3a-b250-4a048b59476b",
+              "leftValue": "={{ $json.categoria }}",
+              "rightValue": "null",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        48
+      ],
+      "id": "7766e169-02a5-4273-b243-a7d04ed9e4c1",
+      "name": "Comprobacion correcto funcionamiento1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "529b3593-9aba-4634-a0a1-474e2b70db04",
+              "leftValue": "={{ $json.concepto }}",
+              "rightValue": "[null]",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "acd79ac8-e1a0-4c3a-b250-4a048b59476b",
+              "leftValue": "={{ $json.categoria }}",
+              "rightValue": "[null]",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2144,
+        224
+      ],
+      "id": "0ac5fe8e-1e85-486b-af65-cf7d73048120",
+      "name": "Comprobacion correcto funcionamiento2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Asegúrate de que las clases ExpenseItem, CategorySummary y UserSummary estén definidas arriba.\n/**\n * Clase 1: ExpenseItem (El detalle de cada gasto)\n * Contiene lo mínimo: concepto y cantidad.\n */\nclass ExpenseItem {\n    constructor(concepto, cantidad) {\n        this.concepto = concepto;\n        // Convertir a número para cálculos\n        this.cantidad = Number(cantidad); \n    }\n}\n\n/**\n * Clase 2: CategorySummary (Agrupa gastos de una categoría)\n */\nclass CategorySummary {\n    constructor(categoria_id, category_name) {\n        this.categoria_id = Number(categoria_id);\n        this.category_name = category_name;\n        this.total_cantidad = 0;\n        // Lista de los objetos ExpenseItem\n        this.gastos = []; \n    }\n\n    /**\n     * Añade un gasto y actualiza el total.\n     * @param {ExpenseItem} expense - Instancia de ExpenseItem.\n     */\n    addExpense(expense) {\n        this.gastos.push(expense);\n        this.total_cantidad += expense.cantidad;\n    }\n}\n\n/**\n * Clase 3: UserSummary (Agrupa las categorías de un usuario)\n * Esta será la estructura principal que construiremos.\n */\nclass UserSummary {\n    constructor(user_id) {\n        this.user_id = user_id;\n        // Mapa clave-valor para CategorySummary: { 1: CategorySummary_Obj, 2: CategorySummary_Obj, ...}\n        this.resumen_por_categoria = new Map();\n    }\n\n    /**\n     * Procesa un ítem de gasto de la entrada de n8n.\n     * @param {object} itemJson - El JSON del gasto individual de n8n.\n     */\n    addExpenseFromInput(itemJson) {\n        const catId = itemJson.category_id;\n        const nameCategory = itemJson.name;\n        \n        // 1. Obtener o crear el resumen de la categoría\n        let categorySummary;\n        if (this.resumen_por_categoria.has(catId)) {\n            categorySummary = this.resumen_por_categoria.get(catId);\n        } else {\n            // Si no existe, creamos una nueva instancia de CategorySummary\n            categorySummary = new CategorySummary(catId, nameCategory);\n            this.resumen_por_categoria.set(catId, categorySummary);\n        }\n\n        // 2. Crear el ítem de gasto detallado\n        const item = new ExpenseItem(\n            itemJson.concepto,\n            itemJson.cantidad\n        );\n\n        // 3. Añadir el ítem al resumen de la categoría\n        categorySummary.addExpense(item);\n    }\n\n    /**\n     * Prepara el resultado final en un formato limpio (array) para n8n.\n     */\n    getSummary() {\n        // Convierte el mapa de categorías a un array para la salida final\n        const categoriesArray = Array.from(this.resumen_por_categoria.values());\n        \n        return {\n            user_id: this.user_id,\n            resumen_por_categoria: categoriesArray\n        };\n    }\n}\n\n\n\n\n// Objeto para almacenar la instancia de UserSummary para cada usuario\n// Estructura: { 123: UserSummary_Obj, 456: UserSummary_Obj }\nconst usersMap = new Map();\n\n// 1. Iterar sobre todos los ítems de entrada (gastos de todos los usuarios)\nfor (const item of $input.all()) {\n    const json = item.json;\n    const userId = json.user_id; // Asumimos que user_id está en cada gasto\n\n    // 2. Obtener o crear la instancia de UserSummary para este usuario\n    let userSummary;\n    if (usersMap.has(userId)) {\n        userSummary = usersMap.get(userId);\n    } else {\n        // Si no existe, creamos una nueva instancia de UserSummary\n        userSummary = new UserSummary(userId);\n        usersMap.set(userId, userSummary);\n    }\n    \n    // 3. Añadir el gasto al resumen del usuario (que internamente lo agrupa por categoría)\n    userSummary.addExpenseFromInput(json);\n}\n\n// 4. Obtener el resultado final para cada usuario y devolverlo como un array\nconst finalResults = [];\nfor (const summary of usersMap.values()) {\n    finalResults.push({\n        json: summary.getSummary()\n    });\n}\n\n// Devolver el array final de objetos para n8n.\nreturn finalResults;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -912
+      ],
+      "id": "1f1bbd79-a2ad-44b4-b784-6887dd2ff1ab",
+      "name": "Generar_Json_gastos_usuarios"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const data = item.json;\n  \n  // Verificamos si hay datos de categorías\n  if (data.resumen_por_categoria && data.resumen_por_categoria.length > 0) {\n    \n    // 1. SUMAR TODO (Cálculo del Total Global)\n    // Recorremos el array sumando las propiedades 'total_cantidad'\n    const totalGlobal = data.resumen_por_categoria.reduce((acumulador, categoria) => {\n      return acumulador + (parseFloat(categoria.total_cantidad) || 0);\n    }, 0);\n\n    // 2. CONSTRUIR EL MENSAJE\n    let mensaje = `📊 *Resumen de Gastos*\\n`;\n    mensaje += `💰 Total Global: ${totalGlobal.toFixed(2)} €\\n`;\n    mensaje += `──────────────────\\n`;\n\n    // Generamos las líneas individuales\n    const lineas = data.resumen_por_categoria.map(cat => {\n      const cantidad = parseFloat(cat.total_cantidad);\n      \n      // Usamos el nombre que YA VIENE en el JSON. \n      // Si viniera vacío, ponemos el ID por seguridad.\n      const nombre = cat.category_name || `Categoría ${cat.categoria_id}`;\n      \n      // Calculamos porcentaje\n      const porcentaje = totalGlobal > 0 ? ((cantidad / totalGlobal) * 100).toFixed(1) : 0;\n\n      return `• *${nombre}:* ${cantidad.toFixed(2)} € (${porcentaje}%)`;\n    });\n\n    mensaje += lineas.join('\\n');\n\n    // 3. ASIGNAR SALIDA\n    item.json.mensaje_final = mensaje;\n    item.json.total_absoluto = totalGlobal; // Guardamos el número limpio por si lo necesitas luego\n\n  } else {\n    // Caso sin gastos\n    item.json.mensaje_final = \"No hay gastos registrados.\";\n    item.json.total_absoluto = 0;\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -912
+      ],
+      "id": "c522430f-100b-4a31-9336-25793a056934",
+      "name": "generar_total"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.user_id }}",
+        "text": "=Gasto mensual:\n{{ $json.mensaje_final }}\nEl total ha sido de: {{ $json.total_absoluto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1712,
+        -912
+      ],
+      "id": "eb1108a3-32b9-4116-a8dc-d624591e2b33",
+      "name": "Mensaje por semana",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.user_id }}",
+        "text": "=Gasto semanal:\n{{ $json.mensaje_final }}\nEl total ha sido de: {{ $json.total_absoluto }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1712,
+        -624
+      ],
+      "id": "5c92e71e-a81b-4ff6-967c-f4d21424cfaf",
+      "name": "Mensaje por semana1",
+      "webhookId": "",
+      "credentials": {
+        "telegramApi": {
+          "id": "",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Asegúrate de que las clases ExpenseItem, CategorySummary y UserSummary estén definidas arriba.\n/**\n * Clase 1: ExpenseItem (El detalle de cada gasto)\n * Contiene lo mínimo: concepto y cantidad.\n */\nclass ExpenseItem {\n    constructor(concepto, cantidad) {\n        this.concepto = concepto;\n        // Convertir a número para cálculos\n        this.cantidad = Number(cantidad); \n    }\n}\n\n/**\n * Clase 2: CategorySummary (Agrupa gastos de una categoría)\n */\nclass CategorySummary {\n    constructor(categoria_id, category_name) {\n        this.categoria_id = Number(categoria_id);\n        this.category_name = category_name;\n        this.total_cantidad = 0;\n        // Lista de los objetos ExpenseItem\n        this.gastos = []; \n    }\n\n    /**\n     * Añade un gasto y actualiza el total.\n     * @param {ExpenseItem} expense - Instancia de ExpenseItem.\n     */\n    addExpense(expense) {\n        this.gastos.push(expense);\n        this.total_cantidad += expense.cantidad;\n    }\n}\n\n/**\n * Clase 3: UserSummary (Agrupa las categorías de un usuario)\n * Esta será la estructura principal que construiremos.\n */\nclass UserSummary {\n    constructor(user_id) {\n        this.user_id = user_id;\n        // Mapa clave-valor para CategorySummary: { 1: CategorySummary_Obj, 2: CategorySummary_Obj, ...}\n        this.resumen_por_categoria = new Map();\n    }\n\n    /**\n     * Procesa un ítem de gasto de la entrada de n8n.\n     * @param {object} itemJson - El JSON del gasto individual de n8n.\n     */\n    addExpenseFromInput(itemJson) {\n        const catId = itemJson.category_id;\n        const nameCategory = itemJson.name;\n        \n        // 1. Obtener o crear el resumen de la categoría\n        let categorySummary;\n        if (this.resumen_por_categoria.has(catId)) {\n            categorySummary = this.resumen_por_categoria.get(catId);\n        } else {\n            // Si no existe, creamos una nueva instancia de CategorySummary\n            categorySummary = new CategorySummary(catId, nameCategory);\n            this.resumen_por_categoria.set(catId, categorySummary);\n        }\n\n        // 2. Crear el ítem de gasto detallado\n        const item = new ExpenseItem(\n            itemJson.concepto,\n            itemJson.cantidad\n        );\n\n        // 3. Añadir el ítem al resumen de la categoría\n        categorySummary.addExpense(item);\n    }\n\n    /**\n     * Prepara el resultado final en un formato limpio (array) para n8n.\n     */\n    getSummary() {\n        // Convierte el mapa de categorías a un array para la salida final\n        const categoriesArray = Array.from(this.resumen_por_categoria.values());\n        \n        return {\n            user_id: this.user_id,\n            resumen_por_categoria: categoriesArray\n        };\n    }\n}\n\n\n\n\n// Objeto para almacenar la instancia de UserSummary para cada usuario\n// Estructura: { 123: UserSummary_Obj, 456: UserSummary_Obj }\nconst usersMap = new Map();\n\n// 1. Iterar sobre todos los ítems de entrada (gastos de todos los usuarios)\nfor (const item of $input.all()) {\n    const json = item.json;\n    const userId = json.user_id; // Asumimos que user_id está en cada gasto\n\n    // 2. Obtener o crear la instancia de UserSummary para este usuario\n    let userSummary;\n    if (usersMap.has(userId)) {\n        userSummary = usersMap.get(userId);\n    } else {\n        // Si no existe, creamos una nueva instancia de UserSummary\n        userSummary = new UserSummary(userId);\n        usersMap.set(userId, userSummary);\n    }\n    \n    // 3. Añadir el gasto al resumen del usuario (que internamente lo agrupa por categoría)\n    userSummary.addExpenseFromInput(json);\n}\n\n// 4. Obtener el resultado final para cada usuario y devolverlo como un array\nconst finalResults = [];\nfor (const summary of usersMap.values()) {\n    finalResults.push({\n        json: summary.getSummary()\n    });\n}\n\n// Devolver el array final de objetos para n8n.\nreturn finalResults;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        -624
+      ],
+      "id": "8a8d6808-937f-494b-849c-d8a8167114f1",
+      "name": "Generar_Json_gastos_usuarios1"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  const data = item.json;\n  \n  // Verificamos si hay datos de categorías\n  if (data.resumen_por_categoria && data.resumen_por_categoria.length > 0) {\n    \n    // 1. SUMAR TODO (Cálculo del Total Global)\n    // Recorremos el array sumando las propiedades 'total_cantidad'\n    const totalGlobal = data.resumen_por_categoria.reduce((acumulador, categoria) => {\n      return acumulador + (parseFloat(categoria.total_cantidad) || 0);\n    }, 0);\n\n    // 2. CONSTRUIR EL MENSAJE\n    let mensaje = `📊 *Resumen de Gastos*\\n`;\n    mensaje += `💰 Total Global: ${totalGlobal.toFixed(2)} €\\n`;\n    mensaje += `──────────────────\\n`;\n\n    // Generamos las líneas individuales\n    const lineas = data.resumen_por_categoria.map(cat => {\n      const cantidad = parseFloat(cat.total_cantidad);\n      \n      // Usamos el nombre que YA VIENE en el JSON. \n      // Si viniera vacío, ponemos el ID por seguridad.\n      const nombre = cat.category_name || `Categoría ${cat.categoria_id}`;\n      \n      // Calculamos porcentaje\n      const porcentaje = totalGlobal > 0 ? ((cantidad / totalGlobal) * 100).toFixed(1) : 0;\n\n      return `• *${nombre}:* ${cantidad.toFixed(2)} € (${porcentaje}%)`;\n    });\n\n    mensaje += lineas.join('\\n');\n\n    // 3. ASIGNAR SALIDA\n    item.json.mensaje_final = mensaje;\n    item.json.total_absoluto = totalGlobal; // Guardamos el número limpio por si lo necesitas luego\n\n  } else {\n    // Caso sin gastos\n    item.json.mensaje_final = \"No hay gastos registrados.\";\n    item.json.total_absoluto = 0;\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        -624
+      ],
+      "id": "331c6722-3eb4-4fa9-83f4-3b925ed3fe24",
+      "name": "generar_total1"
+    }
+  ],
+  "pinData": {
+    "pasar a numerico": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No hay permisos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No hay permisos": {
+      "main": [
+        []
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Comprobacion correcto funcionamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Mensaje Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Generar_Json_gastos_usuarios1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Generar_Json_gastos_usuarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get Amount of money if is null",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Amount of money if is null",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Amount of money if is null": {
+      "main": [
+        [
+          {
+            "node": "pasar a numerico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "pasar a numerico": {
+      "main": [
+        [
+          {
+            "node": "Comprobacion correcto funcionamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobacion correcto funcionamiento": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Comprobacion correcto funcionamiento1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Comprobacion correcto funcionamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Comprobacion correcto funcionamiento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobacion correcto funcionamiento1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Comprobacion correcto funcionamiento2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comprobacion correcto funcionamiento2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar_Json_gastos_usuarios": {
+      "main": [
+        [
+          {
+            "node": "generar_total",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generar_total": {
+      "main": [
+        [
+          {
+            "node": "Mensaje por semana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generar_Json_gastos_usuarios1": {
+      "main": [
+        [
+          {
+            "node": "generar_total1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generar_total1": {
+      "main": [
+        [
+          {
+            "node": "Mensaje por semana1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3272808d-1e26-4fc4-9905-03e3fb82811e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5fcfa00c3c778c47044bf201adaae01fb53b277fe9f2bc83a7730e8e25573265"
+  },
+  "id": "KU3ax6xG2YbRAVQV",
+  "tags": []
+}
