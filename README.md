@@ -19,13 +19,18 @@ Además, el sistema genera y envía resúmenes de gastos semanales y mensuales a
 
 Para usar este workflow necesitas:
 
-1.  **n8n** (Self-hosted recomendado para conectar con Ollama localmente).
-2.  **PostgreSQL**:
-    * Tabla `permissions`: Para validar `user_id` de Telegram.
-    * Tabla `expenses`: Para guardar los gastos (`concepto`, `cantidad`, `category_id`, `created_at`).
-    * Tabla `categories`: Para mapear nombres de categorías.
-3.  **Ollama**: Corriendo localmente o en red, con el modelo `phi3` descargado (`ollama pull phi3`).
-4.  **Bot de Telegram**: Token del bot obtenido via BotFather.
+## 🛠️ Requisitos Técnicos
+
+Para desplegar este workflow necesitas:
+
+1.  **n8n**: Versión Self-hosted (recomendado para conectar con Ollama en la misma red/máquina).
+2.  **PostgreSQL**: Base de datos con las siguientes tablas:
+    * `permissions`: Para validar el `user_id` de Telegram.
+    * `expenses`: Para guardar los gastos (`concepto`, `cantidad`, `category_id`, `created_at`).
+    * `categories`: Para mapear los nombres de las categorías.
+3.  **Ollama**: Ejecutándose localmente o en red, con el modelo `phi3` descargado (comando: `ollama pull phi3`).
+4.  **Bot de Telegram**: Token del bot generado con BotFather.
+5.  **Ngrok (o Cloudflare Tunnel)**: Necesario si tu n8n está en local (localhost). Telegram necesita una URL pública (HTTPS) para enviar los mensajes al Webhook de n8n.
 
 ## ⚙️ Cómo Funciona
 
